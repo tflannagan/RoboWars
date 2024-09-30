@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoboWars | Ty</title>
+    <link rel="icon" type="image/png" href="favicon.ico">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0c0c1d;
+            color: #00ffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            transition: all 0.3s ease;
+        }
+
+        .simulation-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #simulationCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .overlay {
+            position: absolute;
+            padding: 8px;
+            background-color: rgba(12, 12, 29, 0.8);
+            border-radius: 5px;
+            font-size: 0.9rem;
+            border: 1px solid #00ffff;
+        }
+
+        #statsOverlay {
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .side-panel {
+            width: 250px;
+            background-color: rgba(26, 26, 58, 0.9);
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: transform 0.3s ease, width 0.3s ease;
+            position: relative;
+        }
+
+        .side-panel.collapsed {
+            transform: translateX(100%);
+            width: 0;
+            padding: 0;
+        }
+
+        .toggle-panel {
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(26, 26, 58, 0.9);
+            color: #00ffff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px 0 0 5px;
+            transition: transform 0.3s ease;
+            z-index: 10;
+        }
+
+        .toggle-panel:hover {
+            background-color: rgba(0, 255, 255, 0.2);
+        }
+
+        .toggle-panel.collapsed {
+            transform: translateY(-50%) rotate(180deg);
+            border-radius: 0 5px 5px 0;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        button {
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #1a1a3a;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background-color: #00ffff;
+            color: #1a1a3a;
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+            background-color: rgba(26, 26, 58, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            border: 1px solid #00ffff;
+        }
+
+        .theme-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-option:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-option.selected::after {
+            content: '✓';
+            color: white;
+            font-size: 24px;
+            text-shadow: 0 0 3px black;
+        }
+
+        .color-preview {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 -2px;
+        }
+
+        .endgame-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(26, 26, 58, 0.95);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            max-width: 80%;
+            width: 400px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .endgame-popup h2 {
+            color: #00ffff;
+            margin-bottom: 20px;
+        }
+
+        .endgame-popup .winner-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .endgame-popup .winner-color {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .endgame-popup .winner-name {
+            font-size: 1.2em;
+            color: #ffffff;
+        }
+
+        .endgame-popup .stats {
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        .endgame-popup button {
+            background-color: #00ffff;
+            color: #1a1a3a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .endgame-popup button:hover {
+            background-color: #ffffff;
+        }
+
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row;
+            }
+
+            .side-panel {
+                width: 250px;
+                height: 100%;
+            }
+
+            .side-panel.collapsed {
+                transform: translateX(100%);
+            }
+
+            .toggle-panel {
+                left: 0;
+                top: 50%;
+                bottom: auto;
+                transform: translateY(-50%);
+            }
+
+            .toggle-panel.collapsed {
+                transform: translateY(-50%) rotate(180deg);
+            }
+
+            .theme-selector {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .endgame-popup {
+                width: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="simulation-container">
+            <canvas id="simulationCanvas"></canvas>
+            <div id="statsOverlay" class="overlay">
+
+
+            </div>
+        </div>
+        <div class="side-panel">
+            <button class="toggle-panel">◀</button>
+            <div class="controls">
+                <button id="startStopBtn">Start</button>
+                <button id="resetBtn">Reset</button>
+                <input type="range" id="speedControl" min="1" max="100" value="50">
+                <span id="speedValue">Speed: 50</span>
+            </div>
+            <div class="theme-selector" id="themeSelector"></div>
+        </div>
+        <div class="endgame-popup" id="endgamePopup">
+            <h2>Simulation Complete!</h2>
+            <div class="winner-info">
+                <div class="winner-color" id="winnerColor"></div>
+                <div class="winner-name" id="winnerName"></div>
+            </div>
+            <div class="stats" id="winnerStats"></div>
+            <button id="restartBtn">Restart Simulation</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statsOverlay = document.getElementById('statsOverlay');
+        const sidePanel = document.querySelector('.side-panel');
+        const togglePanel = document.querySelector('.toggle-panel');
+        const speedControl = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+
+        const endgamePopup = document.getElementById('endgamePopup');
+        const winnerColor = document.getElementById('winnerColor');
+        const winnerName = document.getElementById('winnerName');
+        const winnerStats = document.getElementById('winnerStats');
+        const restartBtn = document.getElementById('restartBtn');
+
+        let width, height;
+        let isRunning = false;
+        let time = 0;
+        let updateInterval = 1000;
+        let lastUpdateTime = 0;
+
+        const GRID_SIZE = 12;
+        let COLS, ROWS;
+
+        let grid;
+        let frameCounter = 0;
+        const UPDATE_INTERVAL = 5;
+
+
+        const ROBOT_TYPES = ['Primary', 'Secondary', 'Tertiary', 'Quaternary'];
+
+        const colorThemes = [
+        { name: 'Neon Twilight', primary: '#FF00FF', secondary: '#00FFFF', tertiary: '#8A2BE2', quaternary: '#4169E1', background: '#0C0C0C', grid: '#1C1C1C' },
+            { name: 'Emerald Enigma', primary: '#00A000', secondary: '#32CD32', tertiary: '#3CB371', quaternary: '#2E8B57', background: '#002200', grid: '#003300' },
+            { name: 'Violet Vortex', primary: '#8A2BE2', secondary: '#9400D3', tertiary: '#9370DB', quaternary: '#BA55D3', background: '#2A004F', grid: '#3A0060' },
+            { name: 'Sapphire Seas', primary: '#0000CD', secondary: '#4169E1', tertiary: '#1E90FF', quaternary: '#00BFFF', background: '#00008B', grid: '#000080' }
+        ];
+        let currentTheme = colorThemes[0];
+        const robotTypeNames = ROBOT_TYPES.map(type => generateRobotName(currentTheme[type.toLowerCase()]));
+
+        function generateRobotName(color) {
+            const colorNames = {
+                '#00ffff': 'MK3-', '#ff00ff': 'RI2-', '#ffff00': 'X7E-',
+                '#ff4500': 'M2R-', '#008080': 'RI2-', '#ff6347': 'X7E-',
+                '#7f00ff': 'MN6-', '#4d4dff': 'RI2-', '#00ced1': 'X7E-',
+                '#ff007f': 'MJ9-', '#00bfff': 'RI2-', '#9370db': 'X7E-'
+            };
+
+            const baseNames = ['323R', '12F3', '754H', '4R12', '95L5', '34Y4'];
+            const colorName = colorNames[color] || 'X7E-';
+            const baseName = baseNames[Math.floor(Math.random() * baseNames.length)];
+
+            return `${colorName}${baseName}`;
+        }
+
+        class Robot {
+            constructor(col, row, type) {
+                this.col = col;
+                this.row = row;
+                this.type = ROBOT_TYPES.includes(type) ? type : ROBOT_TYPES[0];
+                this.name = generateRobotName(this.getColor());
+                this.energy = this.randomEnergy();
+                this.strength = this.randomStrength();
+                this.reproductionRate = this.randomReproductionRate();
+                this.name = robotTypeNames[ROBOT_TYPES.indexOf(type)];
+                this.experience = 0;
+                this.age = 0;
+                this.specialization = this.chooseSpecialization();
+                this.allianceScore = {};
+                ROBOT_TYPES.forEach(t => {
+                    this.allianceScore[t] = t !== this.type ? this.randomAllianceScore() : 0;
+                });
+
+                this.lastReproduction = 0;
+                this.mutations = [];
+                this.lastMoveDirection = null;
+                this.consecutiveSameDirectionMoves = 0;
+                this.stagnationCounter = 0;
+                this.aggressiveness = this.randomAggressiveness();
+                this.learnRate = this.randomLearnRate();
+                this.groupId = Math.random().toString(36).substr(2, 9);
+                this.groupRole = this.assignGroupRole();
+                this.lastGroupAction = 0;
+                this.attackPoints = 10;
+                this.isAttacking = false;
+                this.attackingTime = 0;
+            }
+
+            randomEnergy() {
+                const baseEnergy = 75;
+                const variation = 25;
+                return baseEnergy + Math.floor(Math.random() * variation * 2) - variation;
+            }
+
+            randomStrength() {
+                const baseStrength = 0.5;
+                const variation = 0.1;
+                return baseStrength + (Math.random() * variation * 2) - variation;
+            }
+
+            randomReproductionRate() {
+                const baseRate = 0.05;
+                const variation = 0.01;
+                return baseRate + (Math.random() * variation * 2) - variation;
+            }
+
+            randomAllianceScore() {
+                const baseScore = 0;
+                const variation = 5;
+                return baseScore + Math.floor(Math.random() * variation * 2) - variation;
+            }
+
+            randomAggressiveness() {
+                const baseAggressiveness = 0.5;
+                const variation = 0.2;
+                return Math.max(0, Math.min(1, baseAggressiveness + (Math.random() * variation * 2) - variation));
+            }
+
+            randomLearnRate() {
+                const baseLearnRate = 0.15;
+                const variation = 0.05;
+                return baseLearnRate + (Math.random() * variation * 2) - variation;
+            }
+            chooseSpecialization() {
+                const specializations = ['Warrior', 'Explorer', 'Builder', 'Scientist'];
+                const weights = [this.aggressiveness, 1 - this.aggressiveness, Math.random(), this.learnRate];
+                const totalWeight = weights.reduce((a, b) => a + b, 0);
+                const randomValue = Math.random() * totalWeight;
+                let weightSum = 0;
+                for (let i = 0; i < specializations.length; i++) {
+                    weightSum += weights[i];
+                    if (randomValue <= weightSum) return specializations[i];
+                }
+                return specializations[specializations.length - 1];
+            }
+
+            assignGroupRole() {
+                const roles = ['Leader', 'Scout', 'Defender', 'Attacker'];
+                return roles[Math.floor(Math.random() * roles.length)];
+            }
+
+            generateName() {
+                return `${generateRobotName(this.getColor())}-${this.specialization.charAt(0)}`;
+            }
+
+            update(grid) {
+                this.age++;
+                this.adjustEnergyBasedOnEnvironment(grid);
+                if (this.energy <= 0) return false;
+                this.applySpecialization(grid);
+                this.updateAlliances();
+                this.applyGroupTactics(grid);
+                if (this.canReproduce()) this.replicate(grid);
+                this.move(grid);
+                this.mutate();
+                if (this.isAttacking) {
+                    this.attackingTime += 1;
+                    if (this.attackingTime > 5) { // Attack effect lasts for 5 frames
+                        this.isAttacking = false;
+                        this.attackingTime = 0;
+                    }
+                }
+                if (this.stagnationCounter > 10) {
+                    this.energy -= 5;
+                    if (Math.random() < 0.1) this.makeRandomMove(grid);
+                }
+                return this.energy > 0;
+            }
+
+            adjustEnergyBasedOnEnvironment(grid) {
+                const cellColor = grid.getCellColor(this.col, this.row);
+                if (cellColor === this.getColor()) this.energy = Math.min(this.energy + 0.5, 150);
+                else if (cellColor === null) this.energy -= 0.2;
+                else this.energy -= 0.3;
+                grid.setCellColor(this.col, this.row, this.getColor());
+            }
+
+            applySpecialization(grid) {
+                switch (this.specialization) {
+                    case 'Warrior': this.strength *= 1.001; break;
+                    case 'Explorer': if (Math.random() < 0.1) this.energy += 5; break;
+                    case 'Builder':
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                const newCol = (this.col + dx + COLS) % COLS;
+                                const newRow = (this.row + dy + ROWS) % ROWS;
+                                if (grid.getCellColor(newCol, newRow) !== this.getColor()) {
+                                    grid.setCellColor(newCol, newRow, this.getColor());
+                                    this.energy -= 0.1;
+                                }
+                            }
+                        }
+                        break;
+                    case 'Scientist': this.experience += this.learnRate; break;
+                }
+            }
+
+            updateAlliances() {
+                Object.keys(this.allianceScore).forEach(type => {
+                    if (Math.random() < 0.01) {
+                        this.allianceScore[type] += (Math.random() * 2 - 1) * this.aggressiveness;
+                        this.allianceScore[type] = Math.max(-10, Math.min(10, this.allianceScore[type]));
+                    }
+                });
+            }
+
+            canReproduce() {
+                return this.energy > 100 && this.age - this.lastReproduction > 50 && Math.random() < this.reproductionRate;
+            }
+
+            replicate(grid) {
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (let [dx, dy] of directions) {
+                    const newCol = (this.col + dx + COLS) % COLS;
+                    const newRow = (this.row + dy + ROWS) % ROWS;
+                    if (!grid.getRobot(newCol, newRow)) {
+                        const newRobot = new Robot(newCol, newRow, this.type);
+                        newRobot.strength = Math.max(0.1, Math.min(1, this.strength + (Math.random() - 0.5) * 0.1));
+                        newRobot.specialization = Math.random() < 0.8 ? this.specialization : newRobot.chooseSpecialization();
+                        newRobot.mutations = [...this.mutations];
+                        newRobot.aggressiveness = Math.max(0, Math.min(1, this.aggressiveness + (Math.random() - 0.5) * 0.1));
+                        newRobot.learnRate = Math.max(0.1, Math.min(0.3, this.learnRate + (Math.random() - 0.5) * 0.05));
+                        grid.addRobot(newRobot);
+                        this.energy -= 100;
+                        this.lastReproduction = this.age;
+                        return;
+                    }
+                }
+            }
+
+            move(grid) {
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+                let bestMove = null;
+                let bestScore = -Infinity;
+                const randomFactor = 2 + this.aggressiveness * 2;
+
+                for (let [dx, dy] of directions) {
+                    const newCol = this.col + dx;
+                    const newRow = this.row + dy;
+                    if (grid.isValidPosition(newCol, newRow)) {
+                        let score = this.evaluateMove(grid, newCol, newRow);
+                        score += Math.random() * randomFactor;
+                        if (this.lastMoveDirection && this.lastMoveDirection[0] === dx && this.lastMoveDirection[1] === dy) {
+                            score -= 5;
+                        }
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = [newCol, newRow, dx, dy];
+                        }
+                    }
+                }
+
+                if (bestMove) {
+                    const [newCol, newRow, dx, dy] = bestMove;
+                    const targetRobot = grid.getRobot(newCol, newRow);
+                    if (targetRobot) {
+                        if (targetRobot.type !== this.type) this.interact(targetRobot, grid);
+                    } else {
+                        grid.moveRobot(this, newCol, newRow);
+                        if (this.lastMoveDirection && this.lastMoveDirection[0] === dx && this.lastMoveDirection[1] === dy) {
+                            this.consecutiveSameDirectionMoves++;
+                        } else {
+                            this.consecutiveSameDirectionMoves = 0;
+                        }
+                        this.lastMoveDirection = [dx, dy];
+                    }
+                }
+
+                if (this.consecutiveSameDirectionMoves > 5 || !bestMove) {
+                    this.stagnationCounter++;
+                } else {
+                    this.stagnationCounter = Math.max(0, this.stagnationCounter - 1);
+                }
+            }
+            evaluateMove(grid, col, row) {
+                let score = 0;
+                const targetRobot = grid.getRobot(col, row);
+                if (targetRobot) {
+                    if (targetRobot.type === this.type) score -= 5 * (1 - this.aggressiveness);
+                    else {
+                        score += this.allianceScore[targetRobot.type];
+                        if (this.canWinBattle(targetRobot)) score += 10 * this.aggressiveness;
+                        else score -= 10 * (1 - this.aggressiveness);
+                    }
+                } else score += 5;
+                if (grid.getCellColor(col, row) === this.getColor()) score += 3;
+                switch (this.specialization) {
+                    case 'Explorer': if (grid.getCellColor(col, row) !== this.getColor()) score += 5; break;
+                    case 'Builder':
+                        let sameColorCount = 0;
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                const checkCol = (col + dx + COLS) % COLS;
+                                const checkRow = (row + dy + ROWS) % ROWS;
+                                if (grid.getCellColor(checkCol, checkRow) === this.getColor()) sameColorCount++;
+                            }
+                        }
+                        score += sameColorCount;
+                        break;
+                    case 'Warrior': if (targetRobot && targetRobot.type !== this.type) score += 5 * this.aggressiveness; break;
+                    case 'Scientist': if (grid.getCellColor(col, row) !== this.getColor()) score += 3 * this.learnRate; break;
+                }
+                return score;
+            }
+            interact(other, grid) {
+    if (!other) {
+        return; // Exit the method if other is invalid
+    }
+
+    if (other instanceof Base) {
+        this.attackBase(other, grid);
+        return;
+    }
+
+    if (!ROBOT_TYPES.includes(other.type)) {
+        return; // Exit the method if other has an invalid type
+    }
+
+    if (!this.allianceScore) {
+        this.allianceScore = {};
+    }
+
+    if (!this.allianceScore[other.type]) {
+        this.allianceScore[other.type] = this.randomAllianceScore();
+    }
+
+    const interactionThreshold = 5 * (1 - this.aggressiveness);
+    if (this.allianceScore[other.type] > interactionThreshold) {
+        const energyShare = Math.min(10, this.energy / 4);
+        this.energy -= energyShare;
+        other.energy += energyShare;
+        this.allianceScore[other.type]++;
+        if (other.allianceScore && other.allianceScore[this.type] !== undefined) {
+            other.allianceScore[this.type]++;
+        }
+    } else if (this.allianceScore[other.type] < -interactionThreshold ||
+        this.specialization === 'Warrior' ||
+        Math.random() < this.aggressiveness) {
+        this.battle(other, grid);
+    } else {
+        if (Math.random() < 0.5) {
+            this.allianceScore[other.type]++;
+            if (other.allianceScore && other.allianceScore[this.type] !== undefined) {
+                other.allianceScore[this.type]++;
+            }
+        } else {
+            this.allianceScore[other.type]--;
+            if (other.allianceScore && other.allianceScore[this.type] !== undefined) {
+                other.allianceScore[this.type]--;
+            }
+        }
+    }
+    this.stagnationCounter = 0;
+}
+            canWinBattle(opponent) {
+                const attackStrength = this.strength * this.energy / 100 * (1 + this.experience / 100) * (1 + this.aggressiveness / 2);
+                const defenseStrength = opponent.strength * opponent.energy / 100 * (1 + opponent.experience / 100) * (1 + opponent.aggressiveness / 2);
+                return attackStrength > defenseStrength;
+            }
+
+            battle(opponent, grid) {
+                const damage = Math.min(this.attackPoints, opponent.energy);
+                opponent.energy -= damage;
+                this.energy -= opponent.attackPoints;
+
+                if (opponent.energy <= 0) {
+                    grid.removeRobot(opponent);
+                    this.energy = Math.min(150, this.energy + 30);
+                }
+                if (this.energy <= 0) {
+                    grid.removeRobot(this);
+                }
+
+                this.isAttacking = true;
+        this.attackingTime = 0;
+            }
+      
+    attackBase(base, grid) {
+        const damage = Math.min(this.attackPoints, base.energy);
+        const baseDestroyed = base.receiveDamage(damage);
+        this.energy -= base.defense;
+
+        if (baseDestroyed) {
+            grid.removeRobot(base);
+            this.energy = Math.min(150, this.energy + 50);
+        }
+        if (this.energy <= 0) {
+            grid.removeRobot(this);
+        }
+    }
+    
+    mutate() {
+                if (Math.random() < 0.001 * (1 + this.learnRate)) {
+                    const possibleMutations = ['IncreasedStrength', 'EnhancedReproduction', 'EnergyEfficiency', 'ImprovedLearning', 'AdjustedAggressiveness'];
+                    const newMutation = possibleMutations[Math.floor(Math.random() * possibleMutations.length)];
+                    if (!this.mutations.includes(newMutation)) {
+                        this.mutations.push(newMutation);
+                        this.applyMutation(newMutation);
+                    }
+                }
+            }
+
+            applyMutation(mutation) {
+                switch (mutation) {
+                    case 'IncreasedStrength': this.strength *= 1.2; break;
+                    case 'EnhancedReproduction': this.reproductionRate *= 1.2; break;
+                    case 'EnergyEfficiency': break;
+                    case 'ImprovedLearning': this.learnRate = Math.min(0.3, this.learnRate * 1.1); break;
+                    case 'AdjustedAggressiveness': this.aggressiveness = Math.max(0, Math.min(1, this.aggressiveness + (Math.random() - 0.5) * 0.2)); break;
+                }
+                this.stagnationCounter = 0;
+            }
+
+            getColor() {
+                const colorIndex = ROBOT_TYPES.indexOf(this.type);
+                if (currentTheme) {
+                    return colorIndex === 0 ? currentTheme.primary :
+                        colorIndex === 1 ? currentTheme.secondary :
+                            colorIndex === 2 ? currentTheme.tertiary :
+                                colorIndex === 3 ? currentTheme.quaternary :
+                                    '#ffffff'; // Default color if type is not recognized
+                }
+                return '#ffffff'; // Default color if currentTheme is not set
+            }
+
+            applyGroupTactics(grid) {
+                const allies = this.findNearbyAllies(grid);
+                if (allies.length > 0) {
+                    switch (this.groupRole) {
+                        case 'Leader': this.coordinateGroup(allies, grid); break;
+                        case 'Scout': this.exploreTerritory(grid); break;
+                        case 'Defender': this.defendTerritory(allies, grid); break;
+                        case 'Attacker': this.attackEnemies(allies, grid); break;
+                    }
+                }
+            }
+
+            findNearbyAllies(grid) {
+                const allies = [];
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dy = -2; dy <= 2; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const newCol = (this.col + dx + grid.cols) % grid.cols;
+                        const newRow = (this.row + dy + grid.rows) % grid.rows;
+                        const robot = grid.getRobot(newCol, newRow);
+                        if (robot && robot.type === this.type && robot !== this) {
+                            allies.push(robot);
+                        }
+                    }
+                }
+                return allies;
+            }
+
+            coordinateGroup(allies, grid) {
+                if (this.age - this.lastGroupAction > 20) {
+                    const direction = Math.floor(Math.random() * 4);
+                    allies.forEach(ally => {
+                        ally.groupId = this.groupId;
+                        ally.lastMoveDirection = [[-1, 0], [0, 1], [1, 0], [0, -1]][direction];
+                    });
+                    this.lastGroupAction = this.age;
+                }
+            }
+
+            exploreTerritory(grid) {
+                if (this.stagnationCounter > 5) {
+                    this.makeRandomMove(grid);
+                }
+            }
+
+            defendTerritory(allies, grid) {
+                const enemyNearby = this.findNearbyEnemies(grid);
+                if (enemyNearby.length > 0) {
+                    const closestEnemy = enemyNearby[0];
+                    this.moveTowards(closestEnemy.col, closestEnemy.row, grid);
+                } else {
+                    this.patrolPerimeter(grid);
+                }
+            }
+
+            attackEnemies(allies, grid) {
+                const enemyNearby = this.findNearbyEnemies(grid);
+                if (enemyNearby.length > 0) {
+                    const targetEnemy = enemyNearby[Math.floor(Math.random() * enemyNearby.length)];
+                    this.moveTowards(targetEnemy.col, targetEnemy.row, grid);
+                } else {
+                    this.makeRandomMove(grid);
+                }
+            }
+
+            findNearbyEnemies(grid) {
+                const enemies = [];
+                for (let dx = -3; dx <= 3; dx++) {
+                    for (let dy = -3; dy <= 3; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const newCol = (this.col + dx + grid.cols) % grid.cols;
+                        const newRow = (this.row + dy + grid.rows) % grid.rows;
+                        const robot = grid.getRobot(newCol, newRow);
+                        if (robot && robot.type !== this.type) {
+                            enemies.push(robot);
+                        }
+                    }
+                }
+                return enemies;
+            }
+
+            moveTowards(targetCol, targetRow, grid) {
+                const dx = (targetCol - this.col + grid.cols) % grid.cols;
+                const dy = (targetRow - this.row + grid.rows) % grid.rows;
+                const newCol = (this.col + Math.sign(dx) + grid.cols) % grid.cols;
+                const newRow = (this.row + Math.sign(dy) + grid.rows) % grid.rows;
+                this.tryMove(newCol, newRow, grid);
+            }
+
+            patrolPerimeter(grid) {
+                const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+                let moved = false;
+                for (let [dx, dy] of directions) {
+                    const newCol = (this.col + dx + grid.cols) % grid.cols;
+                    const newRow = (this.row + dy + grid.rows) % grid.rows;
+                    if (grid.getCellColor(newCol, newRow) !== this.getColor()) {
+                        moved = this.tryMove(newCol, newRow, grid);
+                        if (moved) break;
+                    }
+                }
+                if (!moved) {
+                    this.makeRandomMove(grid);
+                }
+            }
+
+            makeRandomMove(grid) {
+                const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+                const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
+                const newCol = (this.col + dx + grid.cols) % grid.cols;
+                const newRow = (this.row + dy + grid.rows) % grid.rows;
+                this.tryMove(newCol, newRow, grid);
+            }
+
+            tryMove(newCol, newRow, grid) {
+                const targetRobot = grid.getRobot(newCol, newRow);
+                if (targetRobot) {
+                    if (targetRobot.type !== this.type) {
+                        this.interact(targetRobot, grid);
+                    }
+                    return false;
+                } else {
+                    grid.moveRobot(this, newCol, newRow);
+                    return true;
+                }
+            }
+        }
+
+
+        class LargeRobot extends Robot {
+            constructor(col, row, type, condensedRobots) {
+                super(col, row, type);
+                this.size = 2;
+                this.condensedRobots = condensedRobots;
+                this.strength *= 2;
+                this.energy = this.condensedRobots.reduce((sum, robot) => sum + robot.energy, 0);
+                this.maxEnergy = this.energy;
+                this.attackPoints = this.condensedRobots.length * 10;
+                this.speed = 0.5;
+                this.reproductionRate = this.condensedRobots[0].reproductionRate / 2;
+                this.visionRange = 5;
+                this.aggressiveness = 1.2;
+            }
+
+            update(grid) {
+                this.age++;
+                this.adjustEnergyBasedOnEnvironment(grid);
+                if (this.energy <= 0) return false;
+
+                if (this.age % 2 === 0) { // big bots move every other turn due to reduced speed
+                    const nearestEnemy = this.findNearestEnemy(grid);
+                    if (nearestEnemy) {
+                        this.moveTowardsEnemy(nearestEnemy, grid);
+                        this.battle(grid); // Always attempt to battle when near an enemy
+                    } else {
+                        this.moveRandomly(grid);
+                    }
+                }
+
+                if (this.canReproduce()) {
+                    this.reproduceSmallRobot(grid);
+                }
+
+                return this.energy > 0;
+            }
+            findNearestEnemy(grid) {
+                let nearestEnemy = null;
+                let minDistance = Infinity;
+
+                for (let dx = -this.visionRange; dx <= this.visionRange; dx++) {
+                    for (let dy = -this.visionRange; dy <= this.visionRange; dy++) {
+                        const newCol = (this.col + dx + grid.cols) % grid.cols;
+                        const newRow = (this.row + dy + grid.rows) % grid.rows;
+                        const robot = grid.getRobot(newCol, newRow);
+                        if (robot && robot.type !== this.type) {
+                            const distance = Math.abs(dx) + Math.abs(dy);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                nearestEnemy = robot;
+                            }
+                        }
+                    }
+                }
+
+                return nearestEnemy;
+            }
+
+            moveTowardsEnemy(enemy, grid) {
+                const dx = (enemy.col - this.col + grid.cols) % grid.cols;
+                const dy = (enemy.row - this.row + grid.rows) % grid.rows;
+
+                let newCol = this.col;
+                let newRow = this.row;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    newCol = (this.col + Math.sign(dx) + grid.cols) % grid.cols;
+                } else {
+                    newRow = (this.row + Math.sign(dy) + grid.rows) % grid.rows;
+                }
+
+                if (!grid.getRobot(newCol, newRow)) {
+                    grid.moveRobot(this, newCol, newRow);
+                }
+            }
+
+
+            moveRandomly(grid) {
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
+                const newCol = (this.col + dx + grid.cols) % grid.cols;
+                const newRow = (this.row + dy + grid.rows) % grid.rows;
+
+                if (!grid.getRobot(newCol, newRow)) {
+                    grid.moveRobot(this, newCol, newRow);
+                }
+            }
+
+            battle(grid) {
+                const nearbyEnemies = this.findNearbyEnemies(grid);
+                nearbyEnemies.forEach(enemy => {
+                    if (enemy instanceof LargeRobot) {
+                        this.battleLargeRobot(enemy, grid);
+                    } else {
+                        this.battleSmallRobot(enemy, grid);
+                    }
+                });
+            }
+            battleLargeRobot(enemy, grid) {
+                const damage = Math.min(this.attackPoints * 1.5, enemy.energy); // Increased damage
+                enemy.energy -= damage;
+                this.energy -= enemy.attackPoints;
+
+                if (enemy.energy <= 0) {
+                    grid.removeRobot(enemy);
+                    this.energy = Math.min(this.maxEnergy, this.energy + 150); // Increased energy gain
+                }
+                if (this.energy <= 0) {
+                    grid.removeRobot(this);
+                }
+            }
+
+            battleSmallRobot(enemy, grid) {
+                const damage = Math.min(this.attackPoints, enemy.energy);
+                enemy.energy -= damage;
+                this.energy -= enemy.strength * 5; // Reduced damage taken from small robots
+
+                if (enemy.energy <= 0) {
+                    grid.removeRobot(enemy);
+                    this.energy = Math.min(this.maxEnergy, this.energy + 30); // Increased energy gain
+                }
+                if (this.energy <= 0) {
+                    grid.removeRobot(this);
+                }
+            }
+
+            findNearbyEnemies(grid) {
+                const enemies = [];
+                for (let dx = -3; dx <= 3; dx++) {
+                    for (let dy = -3; dy <= 3; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const newCol = (this.col + dx + grid.cols) % grid.cols;
+                        const newRow = (this.row + dy + grid.rows) % grid.rows;
+                        const robot = grid.getRobot(newCol, newRow);
+                        if (robot && robot.type !== this.type) {
+                            enemies.push(robot);
+                        }
+                    }
+                }
+                return enemies;
+            }
+
+            canReproduce() {
+                return this.energy > 200 && Math.random() < this.reproductionRate;
+            }
+
+            reproduceSmallRobot(grid) {
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+                for (let [dx, dy] of directions) {
+                    const newCol = (this.col + dx + grid.cols) % grid.cols;
+                    const newRow = (this.row + dy + grid.rows) % grid.rows;
+                    if (!grid.getRobot(newCol, newRow)) {
+                        const newRobot = new Robot(newCol, newRow, this.type);
+                        newRobot.energy = 100;
+                        grid.addRobot(newRobot);
+                        this.energy -= 100;
+                        return;
+                    }
+                }
+            }
+
+            draw(ctx, cellWidth, cellHeight) {
+                const x = this.col * cellWidth;
+                const y = this.row * cellHeight;
+                const width = cellWidth * this.size;
+                const height = cellHeight * this.size;
+
+                ctx.fillStyle = this.getColor();
+                ctx.fillRect(x, y, width, height);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, width, height);
+            }
+        }
+
+        class Base {
+    constructor(col, row, type) {
+        this.col = col;
+        this.row = row;
+        this.type = type;
+        this.energy = 2000; // Health points
+        this.maxEnergy = 2000;
+        this.defense = 100;
+        this.influenceRadius = 5;
+        this.productionRate = 0.01;
+        this.productionProgress = 0;
+        this.size = 4;
+    }
+
+    update(grid) {
+        this.maintainInfluence(grid);
+        this.produceRobots(grid);
+        return this.energy > 0;
+    }
+
+    maintainInfluence(grid) {
+        for (let dx = -this.influenceRadius; dx <= this.influenceRadius; dx++) {
+            for (let dy = -this.influenceRadius; dy <= this.influenceRadius; dy++) {
+                const targetCol = (this.col + dx + grid.cols) % grid.cols;
+                const targetRow = (this.row + dy + grid.rows) % grid.rows;
+                grid.setCellColor(targetCol, targetRow, this.getColor());
+            }
+        }
+    }
+
+    produceRobots(grid) {
+        this.productionProgress += this.productionRate;
+        if (this.productionProgress >= 1) {
+            this.productionProgress = 0;
+            this.spawnRobot(grid);
+        }
+    }
+
+    spawnRobot(grid) {
+        const spawnRadius = 2;
+        for (let dx = -spawnRadius; dx <= spawnRadius; dx++) {
+            for (let dy = -spawnRadius; dy <= spawnRadius; dy++) {
+                const targetCol = (this.col + dx + grid.cols) % grid.cols;
+                const targetRow = (this.row + dy + grid.rows) % grid.rows;
+                if (!grid.getRobot(targetCol, targetRow)) {
+                    const newRobot = new Robot(targetCol, targetRow, this.type);
+                    grid.addRobot(newRobot);
+                    return;
+                }
+            }
+        }
+    }
+    receiveDamage(damage) {
+        this.energy = Math.max(0, this.energy - damage);
+        return this.energy <= 0;
+    }
+
+    maintainInfluence(grid) {
+        for (let dx = -this.influenceRadius; dx <= this.influenceRadius; dx++) {
+            for (let dy = -this.influenceRadius; dy <= this.influenceRadius; dy++) {
+                const targetCol = (this.col + dx + grid.cols) % grid.cols;
+                const targetRow = (this.row + dy + grid.rows) % grid.rows;
+                grid.setCellColor(targetCol, targetRow, this.getColor());
+            }
+        }
+    }
+
+    getColor() {
+        const colorIndex = ROBOT_TYPES.indexOf(this.type);
+        if (currentTheme) {
+            return colorIndex === 0 ? currentTheme.primary :
+                   colorIndex === 1 ? currentTheme.secondary :
+                   colorIndex === 2 ? currentTheme.tertiary :
+                   colorIndex === 3 ? currentTheme.quaternary :
+                   '#ffffff'; // Default color if type is not recognized
+        }
+        return '#ffffff';
+    }
+
+    draw(ctx, cellWidth, cellHeight) {
+        const x = this.col * cellWidth;
+        const y = this.row * cellHeight;
+        const width = cellWidth * this.size;
+        const height = cellHeight * this.size;
+
+        // Main building
+        ctx.fillStyle = this.getColor();
+        ctx.fillRect(x, y, width, height);
+
+        // Windows
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+                ctx.fillRect(x + width * (0.2 + i * 0.3), y + height * (0.3 + j * 0.3), width * 0.2, height * 0.2);
+            }
+        }
+
+        // Chimney
+        ctx.fillStyle = this.lightenColor(this.getColor(), -20);
+        ctx.fillRect(x + width * 0.8, y - height / 3, width * 0.15, height / 2);
+
+        // Side building
+        ctx.fillStyle = this.lightenColor(this.getColor(), 20);
+        ctx.fillRect(x + width * 0.7, y + height * 0.6, width * 0.3, height * 0.4);
+
+        // Door
+        ctx.fillStyle = this.lightenColor(this.getColor(), -30);
+        ctx.fillRect(x + width * 0.45, y + height * 0.7, width * 0.1, height * 0.3);
+
+        // Energy bar
+        const energyPercentage = this.energy / this.maxEnergy;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(x, y + height, width, height * 0.1);
+        ctx.fillStyle = `rgb(${255 * (1 - energyPercentage)}, ${255 * energyPercentage}, 0)`;
+        ctx.fillRect(x, y + height, width * energyPercentage, height * 0.1);
+
+        // Outline
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+    }
+    lightenColor(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16),
+            amt = Math.round(2.55 * percent),
+            R = (num >> 16) + amt,
+            G = (num >> 8 & 0x00FF) + amt,
+            B = (num & 0x0000FF) + amt;
+        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    }
+}
+
+        class Grid {
+            constructor(cols, rows) {
+                this.cols = cols;
+                this.rows = rows;
+                this.grid = Array(cols).fill().map(() => Array(rows).fill(null));
+                this.colors = Array(cols).fill().map(() => Array(rows).fill(null));
+                
+            }
+
+            addRobot(robot) {
+    if (this.isValidPosition(robot.col, robot.row) && !this.grid[robot.col][robot.row]) {
+        if (!ROBOT_TYPES.includes(robot.type)) {
+            robot.type = ROBOT_TYPES[0];
+        }
+        this.grid[robot.col][robot.row] = robot;
+        return true;
+    }
+    return false;
+}
+
+            moveRobot(robot, newCol, newRow) {
+                if (this.isValidPosition(newCol, newRow) && !this.grid[newCol][newRow]) {
+                    this.grid[robot.col][robot.row] = null;
+                    robot.col = newCol;
+                    robot.row = newRow;
+                    this.grid[newCol][newRow] = robot;
+                }
+            }
+
+            removeRobot(robot) {
+                if (this.isValidPosition(robot.col, robot.row)) {
+                    this.grid[robot.col][robot.row] = null;
+                }
+            }
+
+            getRobot(col, row) {
+                return this.isValidPosition(col, row) ? this.grid[col][row] : null;
+            }
+
+            setCellColor(col, row, color) {
+                if (this.isValidPosition(col, row)) {
+                    this.colors[col][row] = color;
+                }
+            }
+
+            getCellColor(col, row) {
+                return this.isValidPosition(col, row) ? this.colors[col][row] : null;
+            }
+
+            isValidPosition(col, row) {
+                return col >= 0 && col < this.cols && row >= 0 && row < this.rows;
+            }
+
+            checkForCondensing() {
+                for (let i = 0; i < this.cols - 9; i++) {
+                    for (let j = 0; j < this.rows - 9; j++) {
+                        this.checkAreaForCondensing(i, j);
+                    }
+                }
+            }
+
+            checkAreaForCondensing(startCol, startRow) {
+                const robotCounts = {};
+                const robots = [];
+
+                for (let i = startCol; i < startCol + 10; i++) {
+                    for (let j = startRow; j < startRow + 10; j++) {
+                        const robot = this.getRobot(i, j);
+                        if (robot && !(robot instanceof LargeRobot)) {
+                            if (!robotCounts[robot.type]) {
+                                robotCounts[robot.type] = 0;
+                            }
+                            robotCounts[robot.type]++;
+                            robots.push(robot);
+                        }
+                    }
+                }
+
+                for (const type in robotCounts) {
+                    if (robotCounts[type] >= 10) {
+                        this.condenseRobots(robots.filter(r => r.type === type), type);
+                        return; // one group at a time
+                    }
+                }
+            }
+
+            condenseRobots(robotsToCondense, type) {
+                const centerCol = Math.floor(robotsToCondense.reduce((sum, r) => sum + r.col, 0) / robotsToCondense.length);
+                const centerRow = Math.floor(robotsToCondense.reduce((sum, r) => sum + r.row, 0) / robotsToCondense.length);
+
+                const largeRobot = new LargeRobot(centerCol, centerRow, type, robotsToCondense);
+
+                robotsToCondense.forEach(robot => this.removeRobot(robot));
+                this.addRobot(largeRobot);
+            }
+
+            update() {
+                if (!this.isValidGrid()) return;
+        
+                const entitiesToUpdate = this.grid.flat().filter(entity => entity !== null);
+                for (let entity of entitiesToUpdate) {
+                    if (!entity.update(this)) {
+                        if (entity instanceof Base) {
+                            // Only remove the base if its energy is depleted
+                            if (entity.energy <= 0) {
+                                this.removeRobot(entity);
+                            }
+                        } else {
+                            this.removeRobot(entity);
+                        }
+                    }
+                }
+                this.checkForCondensing();
+                this.checkForLargeRobotSplitting();
+                this.checkForBaseFormation();
+            }
+            checkForLargeRobotSplitting() {
+                const largeRobots = this.grid.flat().filter(robot => robot instanceof LargeRobot);
+                for (let largeRobot of largeRobots) {
+                    if (largeRobot.energy < 50) {
+                        this.splitLargeRobot(largeRobot);
+                    }
+                }
+            }
+
+            splitLargeRobot(largeRobot) {
+                const smallRobotsToCreate = Math.min(4, largeRobot.condensedRobots.length);
+                const energyPerRobot = Math.floor(largeRobot.energy / smallRobotsToCreate);
+
+                for (let i = 0; i < smallRobotsToCreate; i++) {
+                    const newCol = (largeRobot.col + i % 2 + this.cols) % this.cols;
+                    const newRow = (largeRobot.row + Math.floor(i / 2) + this.rows) % this.rows;
+
+                    if (!this.getRobot(newCol, newRow)) {
+                        const newRobot = new Robot(newCol, newRow, largeRobot.type);
+                        newRobot.energy = energyPerRobot;
+                        this.addRobot(newRobot);
+                    }
+                }
+
+                this.removeRobot(largeRobot);
+            }
+            checkForBaseFormation() {
+                const largeRobots = this.grid.flat().filter(robot => robot instanceof LargeRobot);
+                const robotTypes = [...new Set(largeRobots.map(robot => robot.type))];
+        
+                robotTypes.forEach(type => {
+                    const robotsOfType = largeRobots.filter(robot => robot.type === type);
+                    this.checkForBaseFormationInArea(robotsOfType, type);
+                });
+            }
+        
+            checkForBaseFormationInArea(largeRobots, type) {
+                for (let i = 0; i < this.cols - 39; i++) {
+                    for (let j = 0; j < this.rows - 39; j++) {
+                        const robotsInArea = largeRobots.filter(robot =>
+                            robot.col >= i && robot.col < i + 40 &&
+                            robot.row >= j && robot.row < j + 40
+                        );
+        
+                        if (robotsInArea.length >= 10) {
+                            this.formBase(robotsInArea, type);
+                            return; // Only form one base at a time
+                        }
+                    }
+                }
+            }
+        
+            formBase(largeRobots, type) {
+                const centerCol = Math.floor(largeRobots.reduce((sum, robot) => sum + robot.col, 0) / largeRobots.length);
+                const centerRow = Math.floor(largeRobots.reduce((sum, robot) => sum + robot.row, 0) / largeRobots.length);
+        
+                const base = new Base(centerCol, centerRow, type);
+                largeRobots.forEach(robot => this.removeRobot(robot));
+                this.addRobot(base);
+            }
+            
+                draw() {
+        if (!this.isValidGrid()) return;
+
+        const cellWidth = width / this.cols;
+        const cellHeight = height / this.rows;
+
+        // Draw colored cells
+        for (let i = 0; i < this.cols; i++) {
+            for (let j = 0; j < this.rows; j++) {
+                const color = this.colors[i][j];
+                if (color) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(i * cellWidth, j * cellHeight, cellWidth, cellHeight);
+                }
+            }
+        }
+
+        // Draw entities (robots, large robots, and bases)
+        for (let i = 0; i < this.cols; i++) {
+            for (let j = 0; j < this.rows; j++) {
+                const entity = this.grid[i][j];
+                if (entity) {
+                    if (entity instanceof Base) {
+                        entity.draw(ctx, cellWidth, cellHeight);
+                    } else if (entity instanceof LargeRobot) {
+                        this.drawLargeRobot(entity, cellWidth, cellHeight);
+                    } else if (entity instanceof Robot) {
+                        this.drawSmallRobot(entity, cellWidth, cellHeight);
+                    }
+                }
+            }
+        }
+
+        // Draw grid lines
+        ctx.strokeStyle = currentTheme.grid;
+        ctx.lineWidth = 0.05;
+        for (let i = 0; i <= this.cols; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cellWidth, 0);
+            ctx.lineTo(i * cellWidth, height);
+            ctx.stroke();
+        }
+        for (let j = 0; j <= this.rows; j++) {
+            ctx.beginPath();
+            ctx.moveTo(0, j * cellHeight);
+            ctx.lineTo(width, j * cellHeight);
+            ctx.stroke();
+        }
+    }
+            drawSmallRobot(robot, cellWidth, cellHeight) {
+                const centerX = robot.col * cellWidth + cellWidth / 2;
+                const centerY = robot.row * cellHeight + cellHeight / 2;
+                const radius = Math.min(cellWidth, cellHeight) / 2 - 1;
+
+                if (robot.isAttacking) {
+                    const glowRadius = radius + 4;
+                    const gradient = ctx.createRadialGradient(centerX, centerY, radius, centerX, centerY, glowRadius);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, glowRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // glow effect
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius + 2, 0, Math.PI * 2);
+                ctx.fillStyle = robot.getColor();
+                ctx.globalAlpha = 0.3;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                // bot body
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fillStyle = robot.getColor();
+                ctx.fill();
+
+                // bot outline
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+                // energy bar
+                const energyPercentage = robot.energy / 150;
+                const barWidth = cellWidth * 0.6;
+                const barHeight = cellHeight * 0.1;
+                const barX = robot.col * cellWidth + (cellWidth - barWidth) / 2;
+                const barY = (robot.row + 1) * cellHeight - barHeight - 2;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.7)';
+                ctx.fillRect(barX, barY, barWidth * energyPercentage, barHeight);
+            }
+
+            drawLargeRobot(robot, cellWidth, cellHeight) {
+                const x = robot.col * cellWidth;
+                const y = robot.row * cellHeight;
+                const width = cellWidth * robot.size;
+                const height = cellHeight * robot.size;
+
+                ctx.save();
+                ctx.translate(x, y);
+                const scale = Math.min(width, height) / 100;
+                ctx.scale(scale, scale);
+
+                if (robot.isAttacking) {
+                    const glowRadius = 110;
+                    const gradient = ctx.createRadialGradient(50, 50, 100, 50, 50, glowRadius);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.beginPath();
+                    ctx.arc(50, 50, glowRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Main body
+                ctx.fillStyle = robot.getColor();
+                ctx.beginPath();
+                ctx.moveTo(10, 30);
+                ctx.lineTo(90, 30);
+                ctx.lineTo(95, 40);
+                ctx.lineTo(95, 80);
+                ctx.lineTo(90, 90);
+                ctx.lineTo(10, 90);
+                ctx.lineTo(5, 80);
+                ctx.lineTo(5, 40);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Treads
+                const drawTread = (y) => {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(0, y, 100, 10);
+                    for (let i = 0; i < 10; i++) {
+                        ctx.fillStyle = i % 2 === 0 ? '#555' : '#222';
+                        ctx.fillRect(i * 10, y, 10, 10);
+                    }
+                };
+                drawTread(20);
+                drawTread(90);
+
+                // Turret base
+                ctx.fillStyle = this.lightenColor(robot.getColor(), 20);
+                ctx.beginPath();
+                ctx.ellipse(50, 60, 25, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Turret top
+                ctx.fillStyle = this.lightenColor(robot.getColor(), 30);
+                ctx.beginPath();
+                ctx.ellipse(50, 55, 20, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Cannon
+                ctx.fillStyle = this.lightenColor(robot.getColor(), -20);
+                ctx.beginPath();
+                ctx.rect(70, 50, 40, 10);
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Energy core
+                const coreGradient = ctx.createRadialGradient(50, 60, 2, 50, 60, 10);
+                coreGradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+                coreGradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                ctx.fillStyle = coreGradient;
+                ctx.beginPath();
+                ctx.arc(50, 60, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Energy bar
+                const energyPercentage = robot.energy / robot.maxEnergy;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(20, 100, 60, 5);
+                const energyGradient = ctx.createLinearGradient(20, 100, 80, 100);
+                energyGradient.addColorStop(0, 'red');
+                energyGradient.addColorStop(0.5, 'yellow');
+                energyGradient.addColorStop(1, 'lime');
+                ctx.fillStyle = energyGradient;
+                ctx.fillRect(20, 100, 60 * energyPercentage, 5);
+
+                // Details
+                ctx.strokeStyle = this.lightenColor(robot.getColor(), -30);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(20, 40);
+                ctx.lineTo(80, 40);
+                ctx.moveTo(20, 50);
+                ctx.lineTo(80, 50);
+                ctx.moveTo(20, 70);
+                ctx.lineTo(80, 70);
+                ctx.stroke();
+
+                // Sensors
+                const drawSensor = (x, y) => {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+                drawSensor(30, 35);
+                drawSensor(70, 35);
+
+                ctx.restore();
+            }
+
+
+            roundedRect(ctx, x, y, width, height, radius, topOnly = false) {
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                if (topOnly) {
+                    ctx.lineTo(x + width, y + height);
+                    ctx.lineTo(x, y + height);
+                    ctx.lineTo(x, y + radius);
+                } else {
+                    ctx.lineTo(x + width, y + height - radius);
+                    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                    ctx.lineTo(x + radius, y + height);
+                    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                    ctx.lineTo(x, y + radius);
+                }
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+            }
+
+            lightenColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16),
+                    amt = Math.round(2.55 * percent),
+                    R = (num >> 16) + amt,
+                    G = (num >> 8 & 0x00FF) + amt,
+                    B = (num & 0x0000FF) + amt;
+                return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+            }
+
+            isValidGrid() {
+                return this.grid && this.grid.length > 0 && this.grid[0].length > 0;
+            }
+        }
+
+        //Functions
+
+        function initSimulation() {
+            COLS = Math.floor(width / GRID_SIZE);
+            ROWS = Math.floor(height / GRID_SIZE);
+            grid = new Grid(COLS, ROWS);
+
+            // init robots
+            ROBOT_TYPES.forEach((type) => {
+        const col = Math.floor(Math.random() * COLS);
+        const row = Math.floor(Math.random() * ROWS);
+        grid.addRobot(new Robot(col, row, type));
+    });
+        }
+        function updateSimulation() {
+            if (grid) {
+                grid.update();
+                time += updateInterval / 1000;
+                updateStats();
+            }
+        }
+
+        function drawSimulation() {
+    if (currentTheme && grid) {
+        // Clear the canvas and draw background
+        ctx.fillStyle = currentTheme.background;
+        ctx.fillRect(0, 0, width, height);
+
+        const cellWidth = width / grid.cols;
+        const cellHeight = height / grid.rows;
+
+        // Draw colored cells
+        for (let i = 0; i < grid.cols; i++) {
+            for (let j = 0; j < grid.rows; j++) {
+                const color = grid.getCellColor(i, j);
+                if (color) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(i * cellWidth, j * cellHeight, cellWidth, cellHeight);
+                }
+            }
+        }
+
+        // Draw all entities using the grid's draw method
+        grid.draw();
+
+        // Draw grid lines
+        ctx.strokeStyle = currentTheme.grid;
+        ctx.lineWidth = 0.5;
+
+        // Vertical lines
+        for (let i = 0; i <= grid.cols; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cellWidth, 0);
+            ctx.lineTo(i * cellWidth, height);
+            ctx.stroke();
+        }
+
+        // Horizontal lines
+        for (let j = 0; j <= grid.rows; j++) {
+            ctx.beginPath();
+            ctx.moveTo(0, j * cellHeight);
+            ctx.lineTo(width, j * cellHeight);
+            ctx.stroke();
+        }
+    }
+}
+        function updateStats() {
+            if (grid) {
+                const smallRobotCounts = ROBOT_TYPES.map(type =>
+                    grid.grid.flat().filter(entity => entity instanceof Robot && !(entity instanceof LargeRobot) && entity.type === type).length
+                );
+                const largeRobotCounts = ROBOT_TYPES.map(type =>
+                    grid.grid.flat().filter(entity => entity instanceof LargeRobot && entity.type === type).length
+                );
+                const baseCounts = ROBOT_TYPES.map(type =>
+                    grid.grid.flat().filter(entity => entity instanceof Base && entity.type === type).length
+                );
+
+                statsOverlay.style.bottom = '10px';
+                statsOverlay.style.left = '10px';
+                statsOverlay.style.background = 'rgba(0, 0, 0, 0.7)';
+                statsOverlay.style.padding = '10px';
+                statsOverlay.style.borderRadius = '5px';
+                statsOverlay.style.fontSize = '12px';
+                statsOverlay.style.lineHeight = '1.2';
+
+                statsOverlay.innerHTML = `
+            <div style="display: flex; justify-content: space-between;">
+                ${ROBOT_TYPES.map((type, index) => {
+                    const color = index === 0 ? currentTheme.primary :
+                        index === 1 ? currentTheme.secondary :
+                            index === 2 ? currentTheme.tertiary :
+                                currentTheme.quaternary;
+                    return `
+                        <div style="text-align: center; margin: 0 5px;">
+                            <div style="border-radius: 3px; width: 20px; height: 20px; background-color: ${color}; margin: 0 auto;"></div>
+                            <div style="margin-top: 3px"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#e8eaed"><path d="M192-144v-192q0-29.7 21.16-50.85Q234.32-408 264.04-408h432.24Q726-408 747-386.85T768-336v192H192Zm179.75-312Q297-456 244.5-508.71T192-636.21q0-74.79 52.68-127.29Q297.37-816 372.11-816h216.14q74.75 0 127.25 52.71t52.5 127.5q0 74.79-52.68 127.29Q662.63-456 587.89-456H371.75ZM264-216h432v-120H264v120Zm108-312h216q45 0 76.5-31.5T696-636q0-45-31.5-76.5T588-744H372q-45 0-76.5 31.5T264-636q0 45 31.5 76.5T372-528Zm-.21-72q15.21 0 25.71-10.29t10.5-25.5q0-15.21-10.29-25.71t-25.5-10.5q-15.21 0-25.71 10.29t-10.5 25.5q0 15.21 10.29 25.71t25.5 10.5Zm216 0q15.21 0 25.71-10.29t10.5-25.5q0-15.21-10.29-25.71t-25.5-10.5q-15.21 0-25.71 10.29t-10.5 25.5q0 15.21 10.29 25.71t25.5 10.5ZM480-216Zm0-420Z"/></svg> ${smallRobotCounts[index]}</div>
+                            <div style="margin-top: 3px"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#e8eaed"><path d="M216-144q-29.7 0-50.85-21.15Q144-186.3 144-216v-408q0-80 56-136t136-56h288q80 0 136 56t56 136v408q0 29.7-21.15 50.85Q773.7-144 744-144H216Zm0-72h528v-408q0-49.5-35.25-84.75T624-744H336q-49.5 0-84.75 35.25T216-624v408Zm143.79-264Q330-480 309-501.21t-21-51Q288-582 309.21-603t51-21Q390-624 411-602.79t21 51Q432-522 410.79-501t-51 21Zm240 0Q570-480 549-501.21t-21-51Q528-582 549.21-603t51-21Q630-624 651-602.79t21 51Q672-522 650.79-501t-51 21ZM288-216v-72.21Q288-318 309.15-339T360-360h240q29.7 0 50.85 21.15Q672-317.7 672-288v72h-72v-72h-84v72h-72v-72h-84v72h-72Zm-72 0h528-528Z"/></svg> ${largeRobotCounts[index]}</div>
+                            <div style="margin-top: 3px"><svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#e8eaed"><path d="M192-144v-120h90l-69-275q-32-15-50.5-44.5T144-648q0-51 35-85.5t86-34.5q39 0 70.5 23t42.5 61h78v-48q0-15 10.5-25.5T492-768q15 0 25.5 10.5T528-732v7l96-82q8-7 18-8t20 3l133 60q14 6 19.5 19.5T813-705q-6 13-20 18t-28 0l-112-50-105 89 105 90 112-50q14-6 27.5-1t20.5 19q6 13 .5 26T795-543l-133 60q-9 5-19.5 3.5T624-488l-96-82v6q0 15-10.5 25.5T492-528q-15 0-25.5-10.5T456-564v-48h-78q-4 14-11.5 25.5T349-564l172 300h151v120H192Zm72-450q23 0 38.5-15.5T318-648q0-22-15.5-37.5T264-701q-23 0-38.5 15.5T210-648q0 23 15.5 38.5T264-594Zm92 330h82L292-519h-.5.5l64 255Zm82 0Z"/></svg> ${baseCounts[index]}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+        `;
+            }
+        }
+        function gameLoop(timestamp) {
+            if (!lastUpdateTime) lastUpdateTime = timestamp;
+            const elapsed = timestamp - lastUpdateTime;
+
+            frameCounter++;
+
+            if (frameCounter >= UPDATE_INTERVAL) {
+                updateSimulation();
+                frameCounter = 0;
+                lastUpdateTime = timestamp;
+            }
+
+            drawSimulation();
+
+            if (isRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function initThemeSelector() {
+            const themeSelector = document.getElementById('themeSelector');
+            themeSelector.innerHTML = '';
+            colorThemes.forEach((theme, index) => {
+                const themeOption = document.createElement('div');
+                themeOption.className = 'theme-option';
+                themeOption.style.backgroundColor = theme.background;
+                themeOption.innerHTML = `
+                    <div class="color-preview" style="background-color: ${theme.primary}"></div>
+                    <div class="color-preview" style="background-color: ${theme.secondary}"></div>
+                    <div class="color-preview" style="background-color: ${theme.tertiary}"></div>
+                    <div class="color-preview" style="background-color: ${theme.quaternary}"></div>
+                `;
+                themeOption.addEventListener('click', () => selectTheme(index));
+                themeSelector.appendChild(themeOption);
+            });
+            updateSelectedTheme();
+        }
+
+        function selectTheme(index) {
+            currentTheme = colorThemes[index];
+            updateSelectedTheme();
+            updateSimulationColors();
+            updateRobotNames();
+        }
+
+        function updateRobotNames() {
+            if (grid) {
+                grid.grid.flat().filter(robot => robot !== null).forEach(robot => {
+                    robot.name = robot.generateName();
+                });
+            }
+        }
+
+        function updateSelectedTheme() {
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach((option, index) => {
+                option.classList.toggle('selected', colorThemes[index] === currentTheme);
+            });
+        }
+
+        function updateSimulationColors() {
+            document.body.style.backgroundColor = currentTheme.background;
+            document.body.style.color = currentTheme.primary;
+            drawSimulation();
+        }
+
+        function resizeCanvas() {
+            const mainContainer = document.querySelector('.main-container');
+            
+            canvas.width = mainContainer.clientWidth;
+            canvas.height = mainContainer.clientHeight;
+            width = canvas.width;
+            height = canvas.height;
+            
+
+
+            const oldCOLS = COLS;
+            const oldROWS = ROWS;
+            COLS = Math.floor(width / GRID_SIZE);
+            ROWS = Math.floor(height / GRID_SIZE);
+
+            if (!grid) {
+                initSimulation();
+            } else {
+                const newGrid = new Grid(COLS, ROWS);
+
+                // transfer existing robots and colors to the new grid
+                for (let i = 0; i < Math.min(oldCOLS, COLS); i++) {
+                    for (let j = 0; j < Math.min(oldROWS, ROWS); j++) {
+                        if (grid.grid[i] && grid.grid[i][j]) {
+                            const robot = grid.grid[i][j];
+                            newGrid.addRobot(robot);
+                        }
+                        if (grid.colors[i] && grid.colors[i][j]) {
+                            newGrid.setCellColor(i, j, grid.colors[i][j]);
+                        }
+                    }
+                }
+
+                grid = newGrid;
+            }
+            drawSimulation();
+        }
+
+        function checkEndgame() {
+            if (grid) {
+                const remainingTypes = new Set(grid.grid.flat().filter(robot => robot !== null).map(robot => robot.type));
+                if (remainingTypes.size === 1) {
+                    const winner = grid.grid.flat().find(robot => robot !== null);
+                    displayEndgamePopup(winner);
+                    isRunning = false;
+                }
+            }
+        }
+
+        function displayEndgamePopup(winner) {
+            winnerColor.style.backgroundColor = winner.getColor();
+            winnerName.textContent = winner.name;
+
+            const totalRobots = grid.grid.flat().filter(robot => robot !== null).length;
+            const largeRobots = grid.grid.flat().filter(robot => robot instanceof LargeRobot).length;
+
+            winnerStats.innerHTML = `
+                <p>Total Robots: ${totalRobots}</p>
+                <p>Large Robots: ${largeRobots}</p>
+                <p>Small Robots: ${totalRobots - largeRobots}</p>
+                <p>Time Elapsed: ${Math.floor(time)} seconds</p>
+            `;
+
+            endgamePopup.style.display = 'block';
+        }
+
+        function hideEndgamePopup() {
+            endgamePopup.style.display = 'none';
+        }
+
+        function restartSimulation() {
+            hideEndgamePopup();
+            initSimulation();
+            time = 0;
+            isRunning = true;
+            startStopBtn.textContent = 'Stop';
+            requestAnimationFrame(gameLoop);
+        }
+
+
+        function updateSimulation() {
+            if (grid) {
+                grid.update();
+                time += updateInterval / 1000;
+                updateStats();
+                checkEndgame();
+            }
+        }
+
+        // Event Listeners
+        togglePanel.addEventListener('click', () => {
+            sidePanel.classList.toggle('collapsed');
+            togglePanel.classList.toggle('collapsed');
+            resizeCanvas();
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        startStopBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            startStopBtn.textContent = isRunning ? 'Stop' : 'Start';
+            if (isRunning) {
+                lastUpdateTime = 0;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+
+        speedControl.addEventListener('input', () => {
+            updateInterval = 100 - speedControl.value;
+            speedValue.textContent = `Speed: ${speedControl.value}`;
+        });
+
+        resetBtn.addEventListener('click', () => {
+            restartSimulation();
+        });
+
+        restartBtn.addEventListener('click', restartSimulation);
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initThemeSelector();
+            currentTheme = colorThemes[0]; // Set initial theme
+            resizeCanvas();
+            initSimulation();
+            drawSimulation();
+        });
+    </script>
+</body>
+</html>
