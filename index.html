@@ -224,39 +224,7 @@
             background-color: #ffffff;
         }
 
-        @media (min-width: 768px) {
-            .main-container {
-                flex-direction: row;
-            }
-
-            .side-panel {
-                width: 250px;
-                height: 100%;
-            }
-
-            .side-panel.collapsed {
-                transform: translateX(100%);
-            }
-
-            .toggle-panel {
-                left: 0;
-                top: 50%;
-                bottom: auto;
-                transform: translateY(-50%);
-            }
-
-            .toggle-panel.collapsed {
-                transform: translateY(-50%) rotate(180deg);
-            }
-
-            .theme-selector {
-                grid-template-columns: repeat(5, 1fr);
-            }
-
-            .endgame-popup {
-                width: 400px;
-            }
-        }
+        
     </style>
 </head>
 
@@ -1758,12 +1726,11 @@
 
         function resizeCanvas() {
             const mainContainer = document.querySelector('.main-container');
-            
             canvas.width = mainContainer.clientWidth;
             canvas.height = mainContainer.clientHeight;
             width = canvas.width;
             height = canvas.height;
-            
+
 
 
             const oldCOLS = COLS;
